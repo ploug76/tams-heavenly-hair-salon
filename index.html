@@ -23,7 +23,8 @@ canvas{display:block;position:fixed;left:0;top:0;width:100%;height:100%}
 const c=document.getElementById('c'),g=c.getContext('2d'),$=id=>document.getElementById(id),R=Math.random,TAU=Math.PI*2,PI=Math.PI;
 const CL=(v,a,b)=>v<a?a:v>b?b:v,LERP=(a,b,k)=>a+(b-a)*k,PICK=a=>a[Math.floor(R()*a.length)],HYP=Math.hypot;
 const QS=new URLSearchParams(location.search);
-let DPR=1,CW=0,CH=0;function resizeCanvas(){DPR=Math.min(devicePixelRatio||1,3);CW=c.width=Math.round(innerWidth*DPR);CH=c.height=Math.round(innerHeight*DPR);if(window.onResize)onResize()}
+let SAFE={t:0,r:0,b:0,l:0};function readSafe(){try{if(window.__SAFE){SAFE=Object.assign({t:0,r:0,b:0,l:0},window.__SAFE);return}const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';document.body.appendChild(d);const cs=getComputedStyle(d);SAFE={t:parseFloat(cs.paddingTop)||0,r:parseFloat(cs.paddingRight)||0,b:parseFloat(cs.paddingBottom)||0,l:parseFloat(cs.paddingLeft)||0};d.remove()}catch(e){}}
+let DPR=1,CW=0,CH=0;function resizeCanvas(){DPR=Math.min(devicePixelRatio||1,3);readSafe();CW=c.width=Math.round(innerWidth*DPR);CH=c.height=Math.round(innerHeight*DPR);if(window.onResize)onResize()}
 addEventListener('resize',resizeCanvas);
 // ---------- storage
 const ST={get(k,d){try{const v=localStorage.getItem(GAME_ID+':'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(GAME_ID+':'+k,JSON.stringify(v))}catch(e){}}};
@@ -219,7 +220,7 @@ function togglePause(){if(state!='play')return;paused=!paused;$('pause').textCon
 $('pause').onclick=e=>{e.stopPropagation();togglePause()};window.musicPaused=()=>paused;
 $('help').onclick=e=>{e.stopPropagation();panel(`<h2>💇‍♀️ Tam's Heavenly Hair Salon</h2><p>Customers walk in carrying a <b>burden</b>. Pamper them and send them home happy with an encouraging verse from the King James Bible!</p><h3>How to play</h3><p>1. <b>Tap a customer</b> on the couch, then <b>tap a station</b> matching the service in her bubble (💧 Wash, ✂️ Cut, ➰ Curl, ✨ Style).<br>2. <b>Tap the customer at the station</b> and Tam hurries over to do her magic.<br>3. When her bubble shows the next service, tap her again and move her on.<br>4. When she's done she heads to the <b>register</b> — tap her to check out.</p><p>Tam can line up to 5 jobs. Hearts ♥ show patience — they drop while folks wait. Grab <b>sweet tea</b> from the pitcher and tap a customer to cheer her up! Doing the <b>same service back-to-back</b> earns chain bonuses. Hit the day's goal to unlock the next day, and spend your savings on salon upgrades.</p><p>P = pause, M = mute. <i>"The higher the hair, the closer to God!"</i></p>`)};
 // ======================= RENDER =======================
-function onResize(){VW=CW/DPR;VH=CH/DPR;SC=Math.min(VW/LW,VH/LH);OXs=(VW-LW*SC)/2;OYs=(VH-LH*SC)/2}
+function onResize(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2}
 let bgC=null;function prerenderBG(){bgC=document.createElement('canvas');bgC.width=LW*2;bgC.height=LH*2;const o=bgC.getContext('2d');o.scale(2,2);
  // wall
  const wg=o.createLinearGradient(0,0,0,150);wg.addColorStop(0,'#ffd6e8');wg.addColorStop(1,'#ffb8d6');o.fillStyle=wg;o.fillRect(0,0,LW,150);
@@ -304,29 +305,62 @@ function render(){const t=GT;g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle='#2a0c1
   const mood=c.st=='leave'?1:c.st=='angry'?-1:c.pat<2?-1:c.pat>3.5?1:0;
   if(sel==c){g.strokeStyle='#3cdc5a';g.lineWidth=3;g.beginPath();g.ellipse(c.x,c.y+2,22,7,0,0,TAU);g.stroke()}
   person(c.x,c.y+(sitting?-6:0),{skin:c.skin,dress:c.ty.dress,hair:c.hair,hc:c.hc,walk:(c.st=='enter'||c.st=='walk'||c.st=='leave'||c.st=='angry'||c.st=='toPay')?c.walk:0,hat:(c.st=='leave'||c.order[0]!='wash'||c.st=='enter'||c.st=='wait')?(c.hair=='styled'||c.hair=='messy'?c.ty.hat:0):0,male:c.ty.male,sit:sitting,mood});
-  if(c.st=='service'||c.st=='auto'){const p=c.svP/c.svT;g.fillStyle='rgba(0,0,0,.5)';rrect(g,c.x-22,c.y-100,44,8,4);g.fill();g.fillStyle=SV[c.stn.type].c;rrect(g,c.x-21,c.y-99,42*p,6,3);g.fill()}
-  if(c.st!='leave'&&c.st!='angry'){hearts(c.x,c.y-84-(c.hair=='styled'?14:0),c.pat,c.maxp);
-   if(c.st!='service'&&c.st!='auto'&&c.st!='walk'&&c.st!='toPay'){const need=c.st=='pay'?'$':SV[c.order[c.step]]?SV[c.order[c.step]].ic:'';if(c.st!='ready'||true){const bx=c.x+20,by=c.y-104-(c.hair=='styled'?12:0);g.fillStyle='#fff';rrect(g,bx-12,by-12,c.st=='ready'?40:28,22,8);g.fill();g.beginPath();g.moveTo(bx-6,by+10);g.lineTo(bx-12,by+16);g.lineTo(bx,by+10);g.fill();g.font='13px sans-serif';g.textAlign='center';g.fillStyle='#000';g.fillText(c.st=='ready'?'👋':need,bx+2,by+4);if(c.st=='ready'){g.font='bold 9px sans-serif';g.fillText('TAP',bx+18,by+3)}}}
-   // order steps
-   if(c.st=='wait'||c.st=='enter'||c.st=='done'){for(let k=0;k<c.order.length;k++){g.fillStyle=k<c.step?'#7cff6b':SV[c.order[k]].c;g.beginPath();g.arc(c.x-(c.order.length-1)*5+k*10,c.y+10,3.5,0,TAU);g.fill()}}
-   if(c.served<1)cloud(c.x,c.y+30,c.burden.length>9?c.burden.split(' ')[0]:c.burden,t)}}
+  if(c.st!='leave'&&c.st!='angry'&&(c.st=='wait'||c.st=='enter'||c.st=='done')){for(let k=0;k<c.order.length;k++){g.fillStyle=k<c.step?'#7cff6b':SV[c.order[k]].c;g.beginPath();g.arc(c.x-(c.order.length-1)*5+k*10,c.y+10,3.5,0,TAU);g.fill()}}}
  // parts & floats
  for(const p of parts){g.globalAlpha=1-p.t/p.l;g.fillStyle=p.col;g.beginPath();g.arc(p.x,p.y,p.r,0,TAU);g.fill()}g.globalAlpha=1;
  for(const f of floats){const a=CL(((f.dur||1.4)-f.t)*2,0,1);g.globalAlpha=a;g.font='bold '+(f.big?20:13)+'px "Trebuchet MS",sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#4a1030';g.strokeText(f.s,f.x,f.y-f.t*20);g.fillStyle=f.col||'#fff';g.fillText(f.s,f.x,f.y-f.t*20)}g.globalAlpha=1;
  hud(t);
+ drawCards(t);
  if(verseCard)drawVerse(t);
  if(paused){g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,0,LW,LH);g.fillStyle='#fff';g.font='bold 36px sans-serif';g.textAlign='center';g.fillText('PAUSED',LW/2,LH/2)}}
+
+// ======================= REQUEST CARDS (final top layer, collision-avoiding) =======================
+const TUTR=[132,72,136,34],CW_=90,CH_=34;
+function tutOn(){return state=='play'&&L==1&&tT<14&&!verseCard}
+function sittingC(c){return['ready','service','done','auto'].includes(c.st)||(c.st=='wait'&&c.seat!=null)}
+function staticRects(){const r=[];for(const s of stations)r.push({x:s.x-24,y:s.y+33,w:48,h:15,k:'label'});r.push({x:182,y:266,w:36,h:22,k:'label'});
+ for(const h of HUDR)r.push({x:h[0],y:h[1],w:h[2],h:h[3],k:'hud'});if(tutOn())r.push({x:TUTR[0],y:TUTR[1],w:TUTR[2],h:TUTR[3],k:'hud'});
+ if(verseCard){g.save();g.font='italic 13px Georgia,serif';const n=wrapT('“'+verseCard.txt+'”',200,0,330,17,false);g.restore();const h=58+n*17;r.push({x:20,y:LH-12-h-4,w:360,h:h+8,k:'verse'})}
+ for(const id of ['help','mute','pause']){const e=$(id);if(!e||getComputedStyle(e).display=='none')continue;const b=e.getBoundingClientRect();const[x0,y0]=toL(b.left,b.top),[x1,y1]=toL(b.right,b.bottom);r.push({x:x0,y:y0,w:x1-x0,h:y1-y0,k:'btn'})}
+ return r}
+const ovl=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
+const SAFE_Y0=108;
+function cardInfo(c){const nx=SV[c.order[c.step]],ING={wash:'Washing',cut:'Cutting',curl:'Curling',style:'Styling'};
+ if(c.st=='ready')return{ic:'👋',txt:'Ready — tap!',col:'#3cdc5a'};if(c.st=='service'||c.st=='auto')return{ic:SV[c.stn.type].ic,txt:ING[c.stn.type]+'…',col:SV[c.stn.type].c,prog:c.svP/c.svT};
+ if(c.st=='pay'||c.st=='toPay')return{ic:'💵',txt:'Pay & go',col:'#d4af37'};if(!nx)return{ic:'💖',txt:'All done',col:'#ff5fa2'};
+ return{ic:nx.ic,txt:nx.n+(c.st=='done'?' next':''),col:nx.c}}
+let cardRects=[];
+function layoutCards(){const st=staticRects(),placed=[];const act=cust.filter(c=>c.st!='leave'&&c.st!='angry'&&c.st!='gone');
+ const pri=c=>c.stn&&sittingC(c)?stations.indexOf(c.stn):c.seat!=null?100+c.seat:200+cust.indexOf(c);act.sort((a,b)=>pri(a)-pri(b));
+ const faces=act.map(c=>{const t=c.y-(sittingC(c)?6:0)-80;return{x:c.x-18,y:t,w:36,h:44,c}});faces.push({x:tam.x-20,y:tam.y-88,w:40,h:50});
+ const out=[];for(const c of act){const sit=sittingC(c),top=c.y-(sit?6:0)-80,side=c.stn&&sit?(c.stn.x<200?1:-1):0;const W=CW_,H=CH_;const cand=[];
+  const xs=side>0?[c.x+16,c.x-W/2,c.x-16-W]:side<0?[c.x-16-W,c.x-W/2,c.x+16]:[c.x-W/2,c.x+8,c.x-W-8];
+  const ys=side?[c.y-74,c.y-40,top-H-2,c.y-108,c.y-6]:[top-H-2,top-2*H-6,top-3*H-10,c.y-40,top-4*H-14];
+  for(const y of ys)for(const x of xs)cand.push({x:CL(x,4,LW-4-W),y:CL(y,SAFE_Y0,LH-4-H),w:W,h:H});
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)cand.push({x:CL(c.x-W/2+dx*(W/2+4),4,LW-4-W),y:CL(top-H-2+dy*(H+4),SAFE_Y0,LH-4-H),w:W,h:H});
+  let best=null,bo=1e9;for(const r of cand){let o=0;for(const q of placed)if(ovl(r,q))o+=1;for(const q of st)if(ovl(r,q))o+=1;if(o>=bo)continue;for(const f of faces)if(ovl(r,f))o+=f.c==c?.002:.01;if(o<bo){bo=o;best=r;if(!o)break}}
+  if(bo>=1){let bd=1e9;for(let y=SAFE_Y0;y<=LH-4-H;y+=9)for(let x=4;x<=LW-4-W;x+=10){const r={x,y,w:W,h:H};let o=0;for(const q of placed)if(ovl(r,q)){o=1;break}if(o)continue;for(const q of st)if(ovl(r,q)){o=1;break}if(o)continue;const d=Math.hypot(x+W/2-c.x,y+H/2-top);if(d<bd){bd=d;best=r}}if(bd<1e9)bo=0}
+  placed.push(best);out.push({c,r:best})}
+ cardRects=out;return{cards:out.map(o=>o.r),statics:st}}
+function drawCards(t){if(state!='play')return;layoutCards();for(const{c,r}of cardRects){const I=cardInfo(c);const cx=c.x,cy=c.y-(sittingC(c)?6:0)-40;
+  // pointer line to customer
+  g.strokeStyle='rgba(74,16,48,.55)';g.lineWidth=1.5;g.beginPath();const px=CL(cx,r.x+8,r.x+r.w-8),py=r.y+r.h/2<cy?r.y+r.h:r.y;g.moveTo(px,py);g.lineTo(cx,cy);g.stroke();
+  g.fillStyle='rgba(255,255,255,.97)';rrect(g,r.x,r.y,r.w,r.h,8);g.fill();g.strokeStyle=I.col;g.lineWidth=c.st=='ready'?2.5+Math.sin(t*8):2;g.stroke();
+  g.textAlign='left';g.font='12px sans-serif';g.fillStyle='#000';g.fillText(I.ic,r.x+5,r.y+14);g.font='bold 11px sans-serif';g.fillStyle='#4a1030';g.fillText(I.txt,r.x+22,r.y+13.5);
+  if(I.prog!=null){g.fillStyle='rgba(0,0,0,.15)';rrect(g,r.x+22,r.y+16,r.w-28,3,1.5);g.fill();g.fillStyle=I.col;rrect(g,r.x+22,r.y+16,(r.w-28)*CL(I.prog,0,1),3,1.5);g.fill()}
+  hearts(r.x+4+c.maxp*4,r.y+26,c.pat,c.maxp);
+  if(c.served<1){const bl=c.burden=='Going gray'?'Gray hair':c.burden;g.font='bold 8px sans-serif';const bw=Math.min(r.w-c.maxp*8-12,g.measureText(bl).width+12);const bx=r.x+r.w-bw-4,by=r.y+20;g.fillStyle='#7a8494';rrect(g,bx,by,bw,11,5.5);g.fill();g.fillStyle='#fff';g.textAlign='center';g.fillText(bl,bx+bw/2,by+8.3)}}}
 function drawTam(t){const w=HYP(tam.tx-tam.x,tam.ty-tam.y)>2;person(tam.x,tam.y,{skin:'#f5d0b0',dress:'#ff5fa2',hair:'styled',hc:'#c8601a',walk:w?tam.walk:0,apron:1,boots:'#8a3a14',mood:1,sc:1.08});
  if(carryTea){g.fillStyle='rgba(255,255,255,.7)';g.fillRect(tam.x+14,tam.y-46,10,14);g.fillStyle='#c8701a';g.fillRect(tam.x+15,tam.y-42,8,9)}
  if(tam.task&&tam.task.k=='serve'&&!w){const ty=tam.task.ref.type;g.font='18px sans-serif';g.textAlign='center';const wob=Math.sin(t*14)*4;g.fillText(SV[ty].ic,tam.x+(tam.x<200?18:-18)+wob,tam.y-62)}
  // queue
  if(queue.length){for(let k=0;k<queue.length;k++){const q=queue[k];g.fillStyle='rgba(255,255,255,.85)';g.beginPath();g.arc(tam.x-((queue.length-1)*8)+k*16,tam.y+16,7,0,TAU);g.fill();g.fillStyle='#4a1030';g.font='bold 9px sans-serif';g.textAlign='center';g.fillText(q.k=='serve'?'✓':q.k=='checkout'?'$':q.k=='tea'?'☕':'♥',tam.x-((queue.length-1)*8)+k*16,tam.y+19)}}}
-function hud(t){g.fillStyle='rgba(42,12,30,.85)';rrect(g,4,156,392,0,0);g.fill();
- // top bar overlay on wall (left side under flag)
- g.fillStyle='rgba(42,12,30,.82)';rrect(g,6,76,118,62,10);g.fill();g.textAlign='left';g.fillStyle='#fff';g.font='bold 13px sans-serif';g.fillText('Day '+L,14,94);g.fillStyle='#7cff6b';g.font='bold 18px sans-serif';g.fillText('$'+money,14,115);g.font='11px sans-serif';g.fillStyle='#ffd6e8';g.fillText('Goal $'+cfg.goal+' ★$'+cfg.expert,14,131);
- const p=CL(money/cfg.expert,0,1);g.fillStyle='rgba(255,255,255,.2)';g.fillRect(14,134,100,3);g.fillStyle=money>=cfg.goal?'#ffd54f':'#ff8ad8';g.fillRect(14,134,100*p,3);
- g.fillStyle='rgba(42,12,30,.82)';rrect(g,276,76,118,62,10);g.fill();g.fillStyle='#fff';g.font='bold 12px sans-serif';g.textAlign='right';const left=cfg.n-spawned+cust.length;g.fillText('Guests left: '+left,386,96);g.fillStyle='#ffd6e8';g.font='11px sans-serif';g.fillText('Happy: '+happy+'  Gone: '+lost,386,114);if(chain.n>1){g.fillStyle=SV[chain.type].c;g.fillText('Chain x'+chain.n+' '+SV[chain.type].ic,386,130)}
- if(L==1&&tT<14&&!verseCard){g.fillStyle='rgba(0,0,0,.6)';rrect(g,40,560,320,36,10);g.fill();g.fillStyle='#fff';g.font='bold 12px sans-serif';g.textAlign='center';g.fillText(sel?'Now tap a glowing station!':cust.some(c=>c.st=='ready')?'Tap the customer at the station 👋':'Tap a customer on the couch',200,583)}}
+const HUDR=[[4,72,124,34],[272,72,124,34]];
+function hud(t){const[a,b]=HUDR;
+ g.fillStyle='rgba(42,12,30,.88)';rrect(g,...a,10);g.fill();g.textAlign='left';g.fillStyle='#fff';g.font='bold 12px sans-serif';g.fillText('Day '+L,a[0]+8,a[1]+14);g.fillStyle='#7cff6b';g.font='bold 15px sans-serif';g.textAlign='right';g.fillText('$'+money,a[0]+a[2]-8,a[1]+15);g.textAlign='left';g.font='10.5px sans-serif';g.fillStyle='#ffd6e8';g.fillText('Goal $'+cfg.goal+' · ★$'+cfg.expert,a[0]+8,a[1]+27);
+ const p=CL(money/cfg.expert,0,1);g.fillStyle='rgba(255,255,255,.2)';g.fillRect(a[0]+8,a[1]+30,a[2]-16,2.5);g.fillStyle=money>=cfg.goal?'#ffd54f':'#ff8ad8';g.fillRect(a[0]+8,a[1]+30,(a[2]-16)*p,2.5);
+ g.fillStyle='rgba(42,12,30,.88)';rrect(g,...b,10);g.fill();g.fillStyle='#fff';g.font='bold 12px sans-serif';g.textAlign='right';const left=cfg.n-spawned+cust.length;g.fillText('Guests left: '+left,b[0]+b[2]-8,b[1]+14);g.fillStyle='#ffd6e8';g.font='10.5px sans-serif';g.fillText(chain.n>1?('😊'+happy+' 💔'+lost+'  Chain ×'+chain.n+' '+SV[chain.type].ic):('Happy '+happy+' · Gone '+lost),b[0]+b[2]-8,b[1]+27);
+ if(tutOn()){g.fillStyle='rgba(0,0,0,.7)';rrect(g,...TUTR,10);g.fill();g.fillStyle='#fff';g.font='bold 11px sans-serif';g.textAlign='center';const tx=sel?'Now tap a glowing station!':cust.some(c=>c.st=='ready')?'Tap the customer at the station 👋':'Tap a customer on the couch';wrapT(tx,200,TUTR[1]+14,TUTR[2]-12,13)}}
 function wrapT(s,x,y,w,lh,draw=true){const ws=s.split(' ');let line='',n=0;for(const wd of ws){if(g.measureText(line+wd).width>w&&line){if(draw)g.fillText(line.trim(),x,y+n*lh);n++;line=''}line+=wd+' '}if(draw)g.fillText(line.trim(),x,y+n*lh);return n+1}
 function drawVerse(t){const v=verseCard,a=CL(Math.min(v.t/.3,(v.dur-v.t)/.4),0,1),sl=(1-CL(v.t/.3,0,1))*60;g.save();g.globalAlpha=a;g.translate(0,sl);
  g.font='italic 13px Georgia,serif';const lines=wrapT('“'+v.txt+'”',200,0,330,17,false),h=58+lines*17,y0=LH-12-h;
@@ -364,7 +398,7 @@ let lastT=0;function frame(now){requestAnimationFrame(frame);const dt=Math.min(.
  if(state=='play'){if(!paused&&!panelOpen)update(dt);render()}else drawMenu()}
 resizeCanvas();chrome(true);
 if(QS.has('level')){const l=CL(parseInt(QS.get('level')),1,NLEV);if(QS.has('play'))setTimeout(()=>startLevel(l),50);else save.lev=Math.max(save.lev,l)}
-window.__cust=()=>cust;window.__tam=()=>tam;window.__T={get:()=>({state,L,money,cust:cust.map(c=>({st:c.st,order:c.order,step:c.step,pat:+c.pat.toFixed(2),x:c.x|0,y:c.y|0})),queue:queue.length,tam:{x:tam&&tam.x,y:tam&&tam.y},spawned,happy,lost,cfg}),startLevel,stations:()=>stations,custAt,moveTo,enqueue,levelCfg,setSpeed:k=>speedMul=k,update:dt=>update(dt),save:()=>save,BURDENS,VERSES:()=>VERSES};
+window.__cust=()=>cust;window.__tam=()=>tam;window.__T={layout:()=>{const L_=layoutCards();return{cards:L_.cards,statics:L_.statics,sprites:[...cust.filter(c=>c.st!='gone').map(c=>({x:c.x-20,y:c.y-(sittingC(c)?6:0)-80,w:40,h:86})),tam?{x:tam.x-22,y:tam.y-90,w:44,h:96}:null].filter(Boolean),SC,OXs,OYs,VW,VH,SAFE}},get:()=>({state,L,money,cust:cust.map(c=>({st:c.st,order:c.order,step:c.step,pat:+c.pat.toFixed(2),x:c.x|0,y:c.y|0})),queue:queue.length,tam:{x:tam&&tam.x,y:tam&&tam.y},spawned,happy,lost,cfg}),startLevel,stations:()=>stations,custAt,moveTo,enqueue,levelCfg,setSpeed:k=>speedMul=k,update:dt=>update(dt),save:()=>save,BURDENS,VERSES:()=>VERSES};
 requestAnimationFrame(t=>{lastT=t;frame(t)});
 
 </script>
