@@ -243,7 +243,7 @@ c.addEventListener('pointerdown',e=>{A();if(panelOpen)return;const [x,y]=toL(e.c
 addEventListener('keydown',e=>{if(e.code=='KeyP')togglePause();if(e.code=='KeyM'){A();setMute(!muted)}if(e.code=='Escape')sel=null;if((e.code=='Enter'||e.code=='Space')&&state=='title')startLevel(save.lev)});
 function togglePause(){if(state!='play')return;paused=!paused;$('pause').textContent=paused?'▶':'⏸'}
 $('pause').onclick=e=>{e.stopPropagation();togglePause()};window.musicPaused=()=>paused;
-$('help').onclick=e=>{e.stopPropagation();panel(`<h2>💇‍♀️ Tam's Heavenly Hair Salon</h2><p>Customers walk in carrying a <b>burden</b>. Pamper them and send them home happy with an encouraging verse from the King James Bible!</p><h3>How to play</h3><p>1. <b>Tap a customer</b> on the couch, then <b>tap a station</b> matching the service in her bubble (💧 Wash, ✂️ Cut, ➰ Curl, ✨ Style).<br>2. <b>Tap the customer at the station</b> and Tam hurries over to do her magic.<br>3. When her bubble shows the next service, tap her again and move her on.<br>4. When she's done she heads to the <b>register</b> — tap her to check out.</p><p>Tam can line up to 5 jobs. Hearts ♥ show patience — they drop while folks wait. Grab <b>sweet tea</b> from the pitcher and tap a customer to cheer her up! Doing the <b>same service back-to-back</b> earns chain bonuses. Hit the day's goal to unlock the next day, and spend your savings on salon upgrades.</p><p>P = pause, M = mute. <i>"The higher the hair, the closer to God!"</i></p>`)};
+$('help').onclick=e=>{e.stopPropagation();panel(`<h2>💇‍♀️ Tam's Heavenly Hair Salon</h2><p>Customers walk in carrying a <b>burden</b>. Pamper them and send them home happy with an encouraging verse from the King James Bible!</p><h3>How to play</h3><p>1. <b>Tap a customer</b> on the couch, then <b>tap a station</b> matching the service in her bubble (💧 Wash, ✂️ Cut, ➰ Curl, ✨ Style).<br>2. <b>Tap the customer at the station</b> and Tam hurries over to do her magic.<br>3. When her bubble shows the next service, tap her again and move her on.<br>4. When she's done she heads to the <b>register</b> — tap her to check out.</p><p>Tam can line up to 5 jobs. Hearts ♥ show patience — they drop while folks wait. Grab <b>sweet tea</b> from the pitcher and tap a customer to cheer her up! Doing the <b>same service back-to-back</b> earns chain bonuses. Hit the day's goal to unlock the next day, and spend your savings on salon upgrades.</p><p>P = pause, M = mute. <i>"The higher the hair, the closer to God!"</i></p><h3 class="gp-help">🎮 Controller</h3><p class="gp-help">Stick moves the pointer and A taps (customers, stations, buttons). LB / RB jump the pointer between buttons. B deselects, Start pause, Select mute. Menus: D-pad to pick, A to select, B to go back.</p>`)};
 // ======================= RENDER =======================
 function onResize(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2}
 let bgC=null;function prerenderBG(){bgC=document.createElement('canvas');bgC.width=LW*2;bgC.height=LH*2;const o=bgC.getContext('2d');o.scale(2,2);
@@ -714,4 +714,21 @@ window.__unlock={unlocked:un,sample:window.__SAMPLE||null,get badge(){return las
 #palbList li{min-height:30px;height:auto!important;font-size:16px!important}
 .tb{width:46px!important;height:46px!important}#mute{right:55px!important}#help{right:104px!important}
 </style>
+<!-- gamepad:start -->
+<script src="gamepad.js?v=1"></script>
+<script>
+(function(){if(typeof btn==='function'){var _b=btn;btn=function(x,y,w,h,label){var n=menuBtns.length,r=_b.apply(this,arguments);if(menuBtns.length>n&&typeof label==='string')menuBtns[menuBtns.length-1].label=label;return r}}})();
+GamepadSupport.init({
+ keys:{start:'KeyP',back:'KeyM',b:'Escape'},
+ menuKeys:{a:'Enter'},
+ noRepeat:['a','b','x','y','lb','rb','start','back'],
+ ignoreSel:'#dock,#mute,#pause,#help,#inst,#ios,.tb,#dockHint',
+ backSel:'#pclose',
+ menu:function(){var ov=!!document.querySelector('#palbOv.on,#smpLock.on');return ov||panelOpen||paused||state!=='play';},
+ cursor:function(){return !document.querySelector('#palbOv.on,#smpLock.on')&&!panelOpen&&!paused&&(state==='play');},
+ items:GamepadSupport.list(function(){return (document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)?[]:menuBtns;},{scale:function(){return SC},origin:function(){return [OXs,OYs]}}),
+ back:function(){if(document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)return false;var b=menuBtns.filter(function(x){return /^\W*(back|close|menu|done|✕|×)\W*$/i.test(x.label||'')})[0];if(b){b.fn();return true}return false;}
+});
+</script>
+<!-- gamepad:end -->
 </body></html>
