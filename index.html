@@ -717,7 +717,7 @@ window.__unlock={unlocked:un,sample:window.__SAMPLE||null,get badge(){return las
 <!-- gamepad:start -->
 <script src="gamepad.js?v=1"></script>
 <script>
-(function(){if(typeof btn==='function'){var _b=btn;btn=function(x,y,w,h,label){var n=menuBtns.length,r=_b.apply(this,arguments);if(menuBtns.length>n&&typeof label==='string')menuBtns[menuBtns.length-1].label=label;return r}}})();
+(function(){if(typeof btn==='function'){var _b=btn;btn=function(x,y,w,h,label){var n=menuBtns.length,r=_b.apply(this,arguments);if(menuBtns.length>n&&typeof label==='string'){menuBtns[menuBtns.length-1].label=label;}if(menuBtns.length>n)menuBtns[menuBtns.length-1].__s=state;return r}}})();
 GamepadSupport.init({
  keys:{start:'KeyP',back:'KeyM',b:'Escape'},
  menuKeys:{a:'Enter'},
@@ -726,7 +726,7 @@ GamepadSupport.init({
  backSel:'#pclose',
  menu:function(){var ov=!!document.querySelector('#palbOv.on,#smpLock.on');return ov||panelOpen||paused||state!=='play';},
  cursor:function(){return !document.querySelector('#palbOv.on,#smpLock.on')&&!panelOpen&&!paused&&(state==='play');},
- items:GamepadSupport.list(function(){return (document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)?[]:menuBtns;},{scale:function(){return SC},origin:function(){return [OXs,OYs]}}),
+ items:GamepadSupport.list(function(){return (document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)?[]:menuBtns;},{scale:function(){return SC},origin:function(){return [OXs,OYs]},state:function(){return state}}),
  back:function(){if(document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)return false;var b=menuBtns.filter(function(x){return /^\W*(back|close|menu|done|✕|×)\W*$/i.test(x.label||'')})[0];if(b){b.fn();return true}return false;}
 });
 </script>

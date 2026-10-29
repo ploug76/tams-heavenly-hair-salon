@@ -338,6 +338,7 @@ window.GamepadSupport={
   return this;},
  config:function(){return cfg;},
  toast:toast,
+ key:function(code,down){fireKey(down?'keydown':'keyup',code,false);},
  /* adapt a game's own list of canvas-drawn buttons ({x,y,w,h,fn|cb}) into pad-navigable items.
     o.canvas: canvas element (or getter) when the list is in canvas pixels; o.scale: number/getter for custom scaling */
  list:function(getter,o){o=o||{};return function(){var a=[];try{a=getter()||[]}catch(e){return []}
@@ -345,7 +346,8 @@ window.GamepadSupport={
   if(cv){var r=cv.getBoundingClientRect();sc=r.width/(cv.width||r.width);ox=r.left;oy=r.top;}
   if(o.scale!=null)sc=typeof o.scale==='function'?o.scale():o.scale;
   if(o.origin){var og=o.origin();ox=og[0];oy=og[1];}
-  var out=[],seen={};for(var i=0;i<a.length;i++){var b=a[i];if(!b||b.dis||b.disabled||b.hidden)continue;
+  var cs=o.state?o.state():undefined;
+  var out=[],seen={};for(var i=0;i<a.length;i++){var b=a[i];if(!b||b.dis||b.disabled||b.hidden)continue;if(cs!==undefined&&b.__s!==undefined&&b.__s!==cs)continue;
    var k=Math.round(b.x)+','+Math.round(b.y)+','+Math.round(b.w);if(seen[k])continue;seen[k]=1;
    var f=o.act?o.act(b):(b.fn||b.cb||b.onTap||b.action||null);
    out.push({id:String(b.id!=null?b.id:(b.k!=null?b.k:(b.label!=null?b.label:k))),label:b.label||b.id||b.k,x:ox+b.x*sc,y:oy+b.y*sc,w:b.w*sc,h:b.h*sc,act:(o.tap||!f)?null:(function(f){return function(){f()}})(f)});}
